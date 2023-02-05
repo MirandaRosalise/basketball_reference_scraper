@@ -9,18 +9,31 @@ try:
 except:
     from basketball_reference_scraper.constants import TEAM_TO_TEAM_ABBR, TEAM_SETS
     from basketball_reference_scraper.utils import remove_accents
+    from basketball_reference_scraper.request_utils import get_wrapper
 
 
-def get_roster(team, season_end_year):
+def get_roster(league, team, season_end_year):
+    if league.lower()=='nba':
+        wnba = ''
+    elif league.lower()=='wnba':
+        wnba = 'wnba/'
+    else:
+        raise Exception('Please specify either "WNBA" or "NBA" for the league parameter')
     r = get_wrapper(
-        f'https://www.basketball-reference.com/teams/{team}/{season_end_year}.html')
+        f'https://www.basketball-reference.com/{wnba}teams/{team}/{season_end_year}.html')
     df = None
     if r.status_code == 200:
         soup = BeautifulSoup(r.content, 'html.parser')
         table = soup.find('table')
         df = pd.read_html(str(table))[0]
-        df.columns = ['NUMBER', 'PLAYER', 'POS', 'HEIGHT', 'WEIGHT', 'BIRTH_DATE',
-                      'NATIONALITY', 'EXPERIENCE', 'COLLEGE']
+        if league.lower()=='nba':
+            df.columns = ['NUMBER', 'PLAYER', 'POS', 'HEIGHT', 'WEIGHT', 'BIRTH_DATE',
+                          'NATIONALITY', 'EXPERIENCE', 'COLLEGE']
+            df['NATIONALITY'] = df['NATIONALITY'].apply(
+                lambda x: x.upper() if pd.notna(x) else '')
+        else:
+            df.columns = ['NUMBER', 'PLAYER', 'POS', 'HEIGHT', 'WEIGHT', 'BIRTH_DATE',
+                          'EXPERIENCE', 'COLLEGE']
         # remove rows with no player name (this was the issue above)
         df = df[df['PLAYER'].notna()]
         df['PLAYER'] = df['PLAYER'].apply(
@@ -28,13 +41,11 @@ def get_roster(team, season_end_year):
         # handle rows with empty fields but with a player name.
         df['BIRTH_DATE'] = df['BIRTH_DATE'].apply(
             lambda x: pd.to_datetime(x) if pd.notna(x) else pd.NaT)
-        df['NATIONALITY'] = df['NATIONALITY'].apply(
-            lambda x: x.upper() if pd.notna(x) else '')
 
     return df
 
 
-def get_team_stats(team, season_end_year, data_format='PER_GAME'):
+def get_team_stats(league, team, season_end_year, data_format='PER_GAME'):
     if data_format == 'TOTAL':
         selector = 'div_totals-team'
     elif data_format == 'PER_GAME':

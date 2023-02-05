@@ -3,7 +3,7 @@ from basketball_reference_scraper.teams import get_roster, get_team_stats, get_o
 
 class TestTeams(unittest.TestCase):
     def test_get_roster(self):
-        df = get_roster('GSW', 2019)
+        df = get_roster('nba', 'GSW', 2019)
         curry_df = df[df['PLAYER']=='Stephen Curry']
         self.assertEqual(len(curry_df), 1)
 
@@ -13,7 +13,7 @@ class TestTeams(unittest.TestCase):
         self.assertListEqual(list(df.columns), expected_columns) 
 
     def test_get_roster_on_missing_nationality(self):
-        df = get_roster('FTW', 1956)
+        df = get_roster('nba', 'FTW', 1956)
 
         expected_columns = ['NUMBER', 'PLAYER', 'POS', 'HEIGHT', 'WEIGHT',
                 'BIRTH_DATE', 'NATIONALITY', 'EXPERIENCE', 'COLLEGE']
